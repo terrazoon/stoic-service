@@ -15,7 +15,7 @@ provider:
 
     - Effect: Allow
       Action:
-        - lambda:*
+        - ses:SendEmail
       Resource: "*"
 
   stage: dev
@@ -61,6 +61,11 @@ resources:
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
+                - Effect: Allow
+                  Action:
+                    - ses:sendEmail
+                  Resource:
+                    - "*"
                 - Effect: Allow
                   Action:
                     - logs:CreateLogGroup

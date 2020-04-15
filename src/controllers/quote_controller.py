@@ -15,6 +15,13 @@ from random import randrange
 #         "body": json.dumps(joke)
 #     }
 #     return response
+from src.services.email_service import EmailService
+
+
+def _get_image(image_data):
+
+    image = f"<div><image src='{image_data}' alt='image'</div>"
+    return image
 
 def stoic_quote(event, context):
     with open('stoic_quotes.json') as f:
@@ -24,6 +31,18 @@ def stoic_quote(event, context):
     myrand = randrange(num_quotes)
     quote = quote_list[myrand]
     print(f"Author: {quote['Author']} Quote: {quote['Quote']}")
+
+    # with open('images.json') as f:
+    #     images = json.load(f)
+    #
+    # myhtml = "<html><body><h2>" + quote['Quote'] + "/h2" + "<br/><br/>" + quote['Author']
+    # # myhtml += _get_image(images[quote['Author']])
+    # myhtml += "</body></html>"
+    #
+    # print(myhtml)
+    print(f"about to send email from controller with {quote}")
+    EmailService.send_email(quote)
+
     response = {
         "statusCode": 200,
         "body": json.dumps(quote)
