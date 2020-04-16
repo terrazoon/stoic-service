@@ -2,7 +2,7 @@ import json
 
 import boto3
 
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', "us-east-1")
 table = dynamodb.Table('emailAddresses')
 
 
@@ -26,6 +26,7 @@ def subscribe(event, context):
 
 
 def unsubscribe(event, context):
+
     email = event['pathParameters']['email']
 
     response = table.delete_item(

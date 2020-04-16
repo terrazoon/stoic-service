@@ -1,3 +1,10 @@
+# TODO
+# seneca.json, epictetus.json, marcus_aurelius.json
+# get quote api working again
+# serverless-s3-sync
+# custom domain
+# unit tests
+
 service: stoic-service
 # app and org for use with dashboard.serverless.com
 app: new-scheduler-app
@@ -41,6 +48,15 @@ functions:
           input:
             key: 'min5'
 
+  AddQuotesAPI:
+    handler: src/controllers/quote_controller.add_quotes
+    role: myCustRole0
+    events:
+      - http:
+          path: add_quotes
+          method: post
+          cors: true
+
   StoicQuoteAPI:
     handler: src/controllers/quote_controller.stoic_quote
     role: myCustRole0
@@ -71,6 +87,11 @@ functions:
 
 resources:
   Resources:
+
+    QuotesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: vvhvhvh-stoic-service-dev
 
     EmailAddressTable:
       Type: AWS::DynamoDB::Table
@@ -104,6 +125,16 @@ resources:
               Statement:
                 - Effect: Allow
                   Action:
+                    - s3:getObject
+                    - s3:putObject
+                    - s3:deleteObject
+                  Resource:
+                    Fn::Join:
+                      - ''
+                      - - 'arn:aws:s3:::'
+                        - Ref: QuotesBucket
+                - Effect: Allow
+                  Action:
                     - ses:sendEmail
                   Resource:
                     - 'Fn::Join':
@@ -127,6 +158,12 @@ resources:
                           - Ref: 'AWS::Region'
                           - Ref: 'AWS::AccountId'
                           - 'table/emailAddresses'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:dynamodb'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'table/quotes'
                 - Effect: Allow
                   Action:
                     - logs:CreateLogGroup
