@@ -10,8 +10,20 @@ service: stoic-service
 app: new-scheduler-app
 org: razorfangius
 
+frameworkVersion: '>=1.55.0 <2.0.0'
+
 plugins:
   - serverless-python-requirements
+  - serverless-s3-sync
+
+custom:
+  myBucketName: vvhvhvh-stoic-service-dev
+
+
+  s3Sync:
+    - bucketName: ${self:custom.myBucketName} # required
+      bucketPrefix: quotes/ # optional
+      localDir: quotes # required
 
 provider:
   name: aws
@@ -20,6 +32,9 @@ provider:
   runtime: python3.8
   stage: dev
   region: us-east-1
+  environment:
+    POSTING_QUEUE_URL:
+      Ref: PostingQueue
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -48,14 +63,16 @@ functions:
           input:
             key: 'min5'
 
-  AddQuotesAPI:
-    handler: src/controllers/quote_controller.add_quotes
+  ProcessEmail:
+    handler: src/controllers/quote_controller.process_email
     role: myCustRole0
     events:
-      - http:
-          path: add_quotes
-          method: post
-          cors: true
+      - sqs:
+          batchSize: 1
+          arn:
+            Fn::GetAtt:
+              - PostingQueue
+              - Arn
 
   StoicQuoteAPI:
     handler: src/controllers/quote_controller.stoic_quote
@@ -88,10 +105,15 @@ functions:
 resources:
   Resources:
 
+    PostingQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "PostingQueue"
+
     QuotesBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: vvhvhvh-stoic-service-dev
+        BucketName: ${self:custom.myBucketName}
 
     EmailAddressTable:
       Type: AWS::DynamoDB::Table
@@ -125,6 +147,40 @@ resources:
               Statement:
                 - Effect: Allow
                   Action:
+                    - lambda:CreateEventSourceMapping
+                    - lambda:ListEventSourceMappings
+                    - lambda:ListFunctions
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-ProcessEmail'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-StoicQuote'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-StoicQuoteAPI'
+                - Effect: Allow
+                  Action:
+                    - sqs:DeleteMessage
+                    - sqs:SendMessage
+                    - sqs:ReceiveMessage
+                    - sqs:GetQueueAttributes
+                  Resource:
+                    Fn::GetAtt:
+                      - PostingQueue
+                      - Arn
+                - Effect: Allow
+                  Action:
                     - s3:getObject
                     - s3:putObject
                     - s3:deleteObject
@@ -133,6 +189,7 @@ resources:
                       - ''
                       - - 'arn:aws:s3:::'
                         - Ref: QuotesBucket
+                        - '/*'
                 - Effect: Allow
                   Action:
                     - ses:sendEmail
@@ -142,7 +199,13 @@ resources:
                         - - 'arn:aws:ses'
                           - Ref: 'AWS::Region'
                           - Ref: 'AWS::AccountId'
-                          - 'identity/gmail.com'
+                          - 'identity/terrazoon@gmail.com'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:ses'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'identity/razorfangius@yahoo.com'
                 - Effect: "Allow"
                   Action:
                     - dynamodb:Query

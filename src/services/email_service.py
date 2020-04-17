@@ -3,8 +3,9 @@ from botocore.exceptions import ClientError
 
 client = boto3.client('ses', region_name="us-east-1")
 
+
 class EmailService:
-    SENDER = "Sender Name <terrazoon@gmail.com>"
+    SENDER = "Stoic Service <terrazoon@gmail.com>"
     RECIPIENT = "razorfangius@yahoo.com"
     AWS_REGION = "us-east-1"
     SUBJECT = "Stoic Quote of the Day"
@@ -13,25 +14,22 @@ class EmailService:
                  "AWS SDK for Python (Boto)."
                  )
 
-
     CHARSET = "UTF-8"
 
     @staticmethod
     def _get_html(quote):
         my_html = f"<html><head></head><body><h2>{quote['Quote']}</h2><p>{quote['Author']}</p></body></html>"
-        print(f"EmailService._get_html {quote} {my_html}")
         return my_html
 
     @staticmethod
-    def send_email(quote):
-        print(f"EmailService.send_mail receives {quote}")
+    def send_email(quote, my_email_address):
         my_html = EmailService._get_html(quote)
         try:
             # Provide the contents of the email.
             response = client.send_email(
                 Destination={
                     'ToAddresses': [
-                        EmailService.RECIPIENT,
+                        my_email_address,
                     ],
                 },
                 Message={
@@ -55,6 +53,3 @@ class EmailService:
 
         except ClientError as e:
             print(e.response['Error']['Message'])
-        else:
-            print("Email sent! Message ID:"),
-            print(response['MessageId'])
