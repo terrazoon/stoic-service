@@ -33,6 +33,7 @@ provider:
   stage: dev
   region: us-east-1
   environment:
+    QUOTES_BUCKET_NAME: ${self:custom.myBucketName}
     POSTING_QUEUE_URL:
       Ref: PostingQueue
   iamRoleStatements:
@@ -58,7 +59,7 @@ functions:
     role: myCustRole0
     events:
       - schedule:
-          rate: rate(10 minutes)
+          rate: rate(1 minute)
           enabled: true
           input:
             key: 'min5'

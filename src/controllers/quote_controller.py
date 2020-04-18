@@ -1,28 +1,13 @@
 import json
 import os
-import random
 
 import boto3
 
 from src.services.email_service import EmailService
+from src.services.quotes_service import QuotesService
 
 dynamodb = boto3.resource('dynamodb', "us-east-1")
 email_table = dynamodb.Table('emailAddresses')
-
-s3 = boto3.resource('s3')
-
-
-def get_quotes(object_name):
-    obj = s3.Object("vvhvhvh-stoic-service-dev", object_name)
-    body = obj.get()['Body'].read()
-    body = json.loads(body)
-    quotes = body['Quotes']
-    return quotes
-
-
-seneca_quotes = get_quotes("quotes/seneca.json")
-epictetus_quotes = get_quotes("quotes/epictetus.json")
-marcus_quotes = get_quotes("quotes/marcus_aurelius.json")
 
 # Get the service resource
 sqs = boto3.client('sqs')
@@ -43,12 +28,15 @@ def stoic_quote(event, context):
     :param context:
     :return:
     """
+    print("stoic quote called")
     response = email_table.scan()
     data = response['Items']
-    for item in data:
-        email_address = item['email']
-        my_response = sqs.send_message(QueueUrl=queue_url, MessageBody=email_address)
-        print(f"posted to sqs queuee {item}")
+    print(f"data is {data}")
+    _put_email_addresses_in_queue(data)
+    while 'LastEvaluatedKey' in response:
+        response = email_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+        data = response['Items']
+        _put_email_addresses_in_queue(data)
 
     response = {
         "statusCode": 200,
@@ -69,10 +57,8 @@ def process_email(event, context):
     record = records[0]
     my_email_address = record['body']
 
-    quotes = _pick_author()
-    num = len(quotes)
-    my_rand = random.randint(0, num - 1)
-    quote = quotes[my_rand]
+    quote = QuotesService.get_quote()
+    print(f"processing email {my_email_address} {quote}")
     EmailService.send_email(quote, my_email_address)
     response = {
         "statusCode": 200,
@@ -81,13 +67,10 @@ def process_email(event, context):
     return response
 
 
-def _pick_author():
-    my_rand = random.choice(['seneca', 'epictetus', "marcus_aurelius"])
-    print(f"MY AUTHOR = {my_rand}")
-    if my_rand == 'seneca':
-        return seneca_quotes
-    elif my_rand == 'marcus_aurelius':
-        return marcus_quotes
-    else:
-        return epictetus_quotes
-
+def _put_email_addresses_in_queue(data):
+    print(f"enter _put_email_addresses_queue with {data}")
+    for item in data:
+        print(f"item is {item}")
+        email_address = item['email']
+        print(f"putting {email_address} in posting queue")
+        my_response = sqs.send_message(QueueUrl=queue_url, MessageBody=email_address)
