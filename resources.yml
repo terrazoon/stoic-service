@@ -1,0 +1,220 @@
+Resources:
+#  TODO This should create website, cloudfront, https certificate, etc.
+#  But have to decide on a domain and actually buy it first, and have to
+#  set up ACM certificate in the aws console manually before running this
+
+#    FrontPageWebsiteBucket:
+#      Type: AWS::S3::Bucket
+#    FrontPageWebsiteBucketPolicy:
+#      Type: AWS::S3::BucketPolicy
+#      Properties:
+#        Bucket: !Ref FrontPageWebsiteBucket
+#        PolicyDocument:
+#          Statement:
+#            - Effect: Allow
+#              Action:
+#                - s3:GetObject
+#              Resource:
+#                Fn::Join:
+#                  - /
+#                  - - Fn::GetAtt:
+#                        - FrontPageWebsiteBucket
+#                        - Arn
+#                    - '*'
+#              Principal:
+#                CanonicalUser:
+#                  Fn::GetAtt:
+#                    - FrontPageWebsiteOriginAccessIdentity
+#                    - S3CanonicalUserId
+#    FrontPageWebsiteOriginAccessIdentity:
+#      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+#      Properties:
+#        CloudFrontOriginAccessIdentityConfig:
+#          Comment: Origin Access Identity to Access Website Bucket
+#    FrontPageCloudFront:
+#      Type: AWS::CloudFront::Distribution
+#      DependsOn:
+#        - FrontPageWebsiteBucket
+#      Properties:
+#        DistributionConfig:
+#          Origins:
+#            - DomainName:
+#                Fn::GetAtt:
+#                  - FrontPageWebsiteBucket
+#                  - DomainName
+#              Id: S3Origin
+#              S3OriginConfig:
+#                OriginAccessIdentity:
+#                  Fn::Join:
+#                    - /
+#                    - - origin-access-identity
+#                      - cloudfront
+#                      - !Ref FrontPageWebsiteOriginAccessIdentity
+#          CustomErrorResponses:
+#            - ErrorCachingMinTTL: 0
+#              ErrorCode: 403
+#              ResponseCode: 200
+#              ResponsePagePath: /index.html
+#          DefaultCacheBehavior:
+#            AllowedMethods:
+#              - GET
+#              - HEAD
+#            Compress: true
+#            ForwardedValues:
+#              QueryString: true
+#              Cookies:
+#                Forward: none
+#            TargetOriginId: S3Origin
+#            ViewerProtocolPolicy: redirect-to-https
+#          Comment: my example website in s3
+#          DefaultRootObject: index.html
+#          Enabled: true
+#          HttpVersion: http2
+#          PriceClass: PriceClass_All
+#          ViewerCertificate:
+#            AcmCertificateArn: arn:aws:acm:us-east-1:....
+#            MinimumProtocolVersion: TLSv1.1_2016
+#            SslSupportMethod: sni-only
+#          Aliases:
+#            - example.com
+#    FrontPageDNSName:
+#      Type: AWS::Route53::RecordSetGroup
+#      Properties:
+#        HostedZoneName: example.com.
+#        RecordSets:
+#          - Name: example.com
+#            Type: A
+#            AliasTarget:
+#              HostedZoneId: Z2FDTNDATAQYW2 #cloudfront hostedzone id
+#              DNSName:
+#                Fn::GetAtt:
+#                  - FrontPageCloudFront
+#                  - DomainName
+    PostingQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "PostingQueue"
+
+    QuotesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.myBucketName}
+
+    EmailAddressTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: emailAddresses
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    myCustRole0:
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /
+        RoleName: MyCustRole0
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: myPolicyName
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - lambda:CreateEventSourceMapping
+                    - lambda:ListEventSourceMappings
+                    - lambda:ListFunctions
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-ProcessEmail'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-StoicQuote'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:lambda'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'function:stoic-service-dev-StoicQuoteAPI'
+                - Effect: Allow
+                  Action:
+                    - sqs:DeleteMessage
+                    - sqs:SendMessage
+                    - sqs:ReceiveMessage
+                    - sqs:GetQueueAttributes
+                  Resource:
+                    Fn::GetAtt:
+                      - PostingQueue
+                      - Arn
+                - Effect: Allow
+                  Action:
+                    - s3:getObject
+                    - s3:putObject
+                    - s3:deleteObject
+                  Resource:
+                    Fn::Join:
+                      - ''
+                      - - 'arn:aws:s3:::'
+                        - Ref: QuotesBucket
+                        - '/*'
+                - Effect: Allow
+                  Action:
+                    - ses:sendEmail
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:ses'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'identity/terrazoon@gmail.com'
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:ses'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'identity/razorfangius@yahoo.com'
+                - Effect: "Allow"
+                  Action:
+                    - dynamodb:Query
+                    - dynamodb:Scan
+                    - dynamodb:GetItem
+                    - dynamodb:PutItem
+                    - dynamodb:UpdateItem
+                    - dynamodb:DeleteItem
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:dynamodb'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'table/emailAddresses'
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:logs'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'log-group:/aws/lambda/*:*:*'

@@ -53,13 +53,17 @@ provider:
               - Ref: 'AWS::AccountId'
               - 'table/emailAddresses'
 
+
+resources:
+  - ${file(./resources.yml)}
+
 functions:
   StoicQuote:
     handler: src/controllers/quote_controller.stoic_quote
     role: myCustRole0
     events:
       - schedule:
-          rate: rate(1 minute)
+          rate: rate(1 hour)
           enabled: true
           input:
             key: 'min5'
@@ -103,149 +107,13 @@ functions:
           cors: true
 
 
-resources:
-  Resources:
 
-    PostingQueue:
-      Type: "AWS::SQS::Queue"
-      Properties:
-        QueueName: "PostingQueue"
-
-    QuotesBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: ${self:custom.myBucketName}
-
-    EmailAddressTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: emailAddresses
-        AttributeDefinitions:
-          - AttributeName: email
-            AttributeType: S
-        KeySchema:
-          - AttributeName: email
-            KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-
-    myCustRole0:
-      Type: AWS::IAM::Role
-      Properties:
-        Path: /
-        RoleName: MyCustRole0
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action: sts:AssumeRole
-        Policies:
-          - PolicyName: myPolicyName
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - lambda:CreateEventSourceMapping
-                    - lambda:ListEventSourceMappings
-                    - lambda:ListFunctions
-                  Resource:
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:lambda'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'function:stoic-service-dev-ProcessEmail'
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:lambda'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'function:stoic-service-dev-StoicQuote'
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:lambda'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'function:stoic-service-dev-StoicQuoteAPI'
-                - Effect: Allow
-                  Action:
-                    - sqs:DeleteMessage
-                    - sqs:SendMessage
-                    - sqs:ReceiveMessage
-                    - sqs:GetQueueAttributes
-                  Resource:
-                    Fn::GetAtt:
-                      - PostingQueue
-                      - Arn
-                - Effect: Allow
-                  Action:
-                    - s3:getObject
-                    - s3:putObject
-                    - s3:deleteObject
-                  Resource:
-                    Fn::Join:
-                      - ''
-                      - - 'arn:aws:s3:::'
-                        - Ref: QuotesBucket
-                        - '/*'
-                - Effect: Allow
-                  Action:
-                    - ses:sendEmail
-                  Resource:
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:ses'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'identity/terrazoon@gmail.com'
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:ses'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'identity/razorfangius@yahoo.com'
-                - Effect: "Allow"
-                  Action:
-                    - dynamodb:Query
-                    - dynamodb:Scan
-                    - dynamodb:GetItem
-                    - dynamodb:PutItem
-                    - dynamodb:UpdateItem
-                    - dynamodb:DeleteItem
-                  Resource:
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:dynamodb'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'table/emailAddresses'
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:dynamodb'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'table/quotes'
-                - Effect: Allow
-                  Action:
-                    - logs:CreateLogGroup
-                    - logs:CreateLogStream
-                    - logs:PutLogEvents
-                  Resource:
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:logs'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'log-group:/aws/lambda/*:*:*'
-  Outputs:
-    ApiUrl:
-      Description: "The API Gateway URL"
-      Value:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: ApiGatewayRestApi
-            - ".execute-api.us-east-1.amazonaws.com/dev"
+Outputs:
+  ApiUrl:
+    Description: "The API Gateway URL"
+    Value:
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: ApiGatewayRestApi
+          - ".execute-api.us-east-1.amazonaws.com/dev"
