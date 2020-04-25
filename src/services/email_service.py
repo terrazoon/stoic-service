@@ -3,10 +3,13 @@ from botocore.exceptions import ClientError
 
 client = boto3.client('ses', region_name="us-east-1")
 
+ssm = boto3.client('ssm')
+parameter = ssm.get_parameter(Name='/StoicService/senderEmail', WithDecryption=True)
+SENDER = parameter['Parameter']['Value']
+SENDER = "Stoic Service <" + SENDER + ">"
+
 
 class EmailService:
-    SENDER = "Stoic Service <terrazoon@gmail.com>"
-    RECIPIENT = "razorfangius@yahoo.com"
     AWS_REGION = "us-east-1"
     SUBJECT = "Stoic Quote of the Day"
     BODY_TEXT = ("Amazon SES Test (Python)\r\n"
@@ -48,7 +51,7 @@ class EmailService:
                         'Data': EmailService.SUBJECT,
                     },
                 },
-                Source=EmailService.SENDER
+                Source=SENDER
             )
 
         except ClientError as e:
