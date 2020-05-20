@@ -60,7 +60,7 @@ functions:
     role: myCustRole0
     events:
       - schedule:
-          rate: cron(0 20 * * ? *)
+          rate: cron(0 12 * * ? *)
           #rate: rate(1 hour)
           enabled: true
           input:

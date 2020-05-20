@@ -180,9 +180,9 @@ Resources:
                           - 'parameter/StoicService/senderEmail'
                 - Effect: Allow
                   Action:
-                    - s3:getObject
-                    - s3:putObject
-                    - s3:deleteObject
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
                   Resource:
                     Fn::Join:
                       - ''
@@ -198,13 +198,7 @@ Resources:
                         - - 'arn:aws:ses'
                           - Ref: 'AWS::Region'
                           - Ref: 'AWS::AccountId'
-                          - 'identity/terrazoon@gmail.com'
-                    - 'Fn::Join':
-                        - ':'
-                        - - 'arn:aws:ses'
-                          - Ref: 'AWS::Region'
-                          - Ref: 'AWS::AccountId'
-                          - 'identity/razorfangius@yahoo.com'
+                          - '*'
                 - Effect: "Allow"
                   Action:
                     - dynamodb:Query
