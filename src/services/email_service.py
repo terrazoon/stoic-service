@@ -1,3 +1,5 @@
+import datetime
+
 import boto3
 from botocore.exceptions import ClientError
 
@@ -7,6 +9,9 @@ ssm = boto3.client('ssm')
 parameter = ssm.get_parameter(Name='/StoicService/senderEmail', WithDecryption=True)
 SENDER = parameter['Parameter']['Value']
 SENDER = "Stoic Service <" + SENDER + ">"
+
+x = datetime.datetime.now()
+today = x.strftime("%d %B %Y")
 
 
 class EmailService:
@@ -48,7 +53,7 @@ class EmailService:
                     },
                     'Subject': {
                         'Charset': EmailService.CHARSET,
-                        'Data': EmailService.SUBJECT,
+                        'Data': EmailService.SUBJECT + " " + str(today),
                     },
                 },
                 Source=SENDER
