@@ -4,10 +4,8 @@
 
 service: stoic-service
 # app and org for use with dashboard.serverless.com
-app: new-scheduler-app
-org: razorfangius
-
-frameworkVersion: '>=1.55.0 <2.0.0'
+#app: new-scheduler-app
+#org: razorfangius
 
 plugins:
   - serverless-python-requirements
@@ -25,8 +23,8 @@ custom:
 provider:
   name: aws
   timeout: 30
-  memorySize: 512
-  runtime: python3.8
+  memorySize: 256
+  runtime: python3.9
   stage: dev
   region: us-east-1
   environment:
@@ -49,7 +47,7 @@ provider:
               - Ref: 'AWS::Region'
               - Ref: 'AWS::AccountId'
               - 'table/emailAddresses'
-
+  logRetentionInDays: 90
 
 resources:
   - ${file(./resources.yml)}
@@ -105,13 +103,3 @@ functions:
           cors: true
 
 
-
-Outputs:
-  ApiUrl:
-    Description: "The API Gateway URL"
-    Value:
-      Fn::Join:
-        - ""
-        - - "https://"
-          - Ref: ApiGatewayRestApi
-          - ".execute-api.us-east-1.amazonaws.com/dev"

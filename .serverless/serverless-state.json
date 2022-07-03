@@ -1,0 +1,1805 @@
+{
+  "service": {
+    "service": "stoic-service",
+    "serviceObject": {
+      "name": "stoic-service"
+    },
+    "provider": {
+      "name": "aws",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "python3.9",
+      "stage": "dev",
+      "region": "us-east-1",
+      "environment": {
+        "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+        "POSTING_QUEUE_URL": {
+          "Ref": "PostingQueue"
+        }
+      },
+      "iamRoleStatements": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:Query",
+            "dynamodb:Scan",
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem"
+          ],
+          "Resource": [
+            {
+              "Fn::Join": [
+                ":",
+                [
+                  "arn:aws:dynamodb",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  "table/emailAddresses"
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "logRetentionInDays": 90,
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "StoicQuoteLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/stoic-service-dev-StoicQuote",
+              "RetentionInDays": 90
+            }
+          },
+          "ProcessEmailLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/stoic-service-dev-ProcessEmail",
+              "RetentionInDays": 90
+            }
+          },
+          "StoicQuoteAPILogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/stoic-service-dev-StoicQuoteAPI",
+              "RetentionInDays": 90
+            }
+          },
+          "SubscribeAPILogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/stoic-service-dev-SubscribeAPI",
+              "RetentionInDays": 90
+            }
+          },
+          "UnsubscribeAPILogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/stoic-service-dev-UnsubscribeAPI",
+              "RetentionInDays": 90
+            }
+          },
+          "StoicQuoteLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z/stoic-service.zip"
+              },
+              "Handler": "src/controllers/quote_controller.stoic_quote",
+              "Runtime": "python3.9",
+              "FunctionName": "stoic-service-dev-StoicQuote",
+              "MemorySize": 256,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+                  "POSTING_QUEUE_URL": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"POSTING_QUEUE_URL\"]"
+                  }
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "myCustRole0",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "StoicQuoteLogGroup",
+              "myCustRole0"
+            ]
+          },
+          "ProcessEmailLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z/stoic-service.zip"
+              },
+              "Handler": "src/controllers/quote_controller.process_email",
+              "Runtime": "python3.9",
+              "FunctionName": "stoic-service-dev-ProcessEmail",
+              "MemorySize": 256,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+                  "POSTING_QUEUE_URL": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"POSTING_QUEUE_URL\"]"
+                  }
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "myCustRole0",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "ProcessEmailLogGroup",
+              "myCustRole0"
+            ]
+          },
+          "StoicQuoteAPILambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z/stoic-service.zip"
+              },
+              "Handler": "src/controllers/quote_controller.stoic_quote",
+              "Runtime": "python3.9",
+              "FunctionName": "stoic-service-dev-StoicQuoteAPI",
+              "MemorySize": 256,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+                  "POSTING_QUEUE_URL": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"POSTING_QUEUE_URL\"]"
+                  }
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "myCustRole0",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "StoicQuoteAPILogGroup",
+              "myCustRole0"
+            ]
+          },
+          "SubscribeAPILambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z/stoic-service.zip"
+              },
+              "Handler": "src/controllers/subscription_controller.subscribe",
+              "Runtime": "python3.9",
+              "FunctionName": "stoic-service-dev-SubscribeAPI",
+              "MemorySize": 256,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+                  "POSTING_QUEUE_URL": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"POSTING_QUEUE_URL\"]"
+                  }
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "myCustRole0",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SubscribeAPILogGroup",
+              "myCustRole0"
+            ]
+          },
+          "UnsubscribeAPILambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z/stoic-service.zip"
+              },
+              "Handler": "src/controllers/subscription_controller.unsubscribe",
+              "Runtime": "python3.9",
+              "FunctionName": "stoic-service-dev-UnsubscribeAPI",
+              "MemorySize": 256,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "QUOTES_BUCKET_NAME": "vvhvhvh-stoic-service-dev",
+                  "POSTING_QUEUE_URL": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"POSTING_QUEUE_URL\"]"
+                  }
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "myCustRole0",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "UnsubscribeAPILogGroup",
+              "myCustRole0"
+            ]
+          },
+          "StoicQuoteLambdaVersionQNanrx7fkrM8zDM7ycb9z0XoMRUzXYiGp9f4jZJA": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "StoicQuoteLambdaFunction"
+              },
+              "CodeSha256": "7Mv8RpJ92fTfLkJLGEYI08zjG79fkhO72VtqEfj7ZyQ="
+            }
+          },
+          "ProcessEmailLambdaVersionQ2Ih1NuHn1fQ346LssWdelnjrpVyYz4KOAwEk5dqLYQ": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ProcessEmailLambdaFunction"
+              },
+              "CodeSha256": "7Mv8RpJ92fTfLkJLGEYI08zjG79fkhO72VtqEfj7ZyQ="
+            }
+          },
+          "StoicQuoteAPILambdaVersionTTCyqVzarRalJMy5VuYjCSmT4T8EZTKsfdXqC2ffx7o": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "StoicQuoteAPILambdaFunction"
+              },
+              "CodeSha256": "7Mv8RpJ92fTfLkJLGEYI08zjG79fkhO72VtqEfj7ZyQ="
+            }
+          },
+          "SubscribeAPILambdaVersionSHWomubiTCQdFWptT4OOE5ByKxMMmGaOWTb4pSBrk": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SubscribeAPILambdaFunction"
+              },
+              "CodeSha256": "7Mv8RpJ92fTfLkJLGEYI08zjG79fkhO72VtqEfj7ZyQ="
+            }
+          },
+          "UnsubscribeAPILambdaVersionl8ZLkZm9E4GMEcSZQFURTv55xmsCIruye9O8QHBKWyE": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "UnsubscribeAPILambdaFunction"
+              },
+              "CodeSha256": "7Mv8RpJ92fTfLkJLGEYI08zjG79fkhO72VtqEfj7ZyQ="
+            }
+          },
+          "StoicQuoteEventsRuleSchedule1": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+              "ScheduleExpression": "cron(0 12 * * ? *)",
+              "State": "ENABLED",
+              "Targets": [
+                {
+                  "Input": "{\"key\":\"min5\"}",
+                  "Arn": {
+                    "Fn::GetAtt": [
+                      "StoicQuoteLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "Id": "StoicQuoteSchedule"
+                }
+              ]
+            }
+          },
+          "StoicQuoteLambdaPermissionEventsRuleSchedule1": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "StoicQuoteLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "events.amazonaws.com",
+              "SourceArn": {
+                "Fn::GetAtt": [
+                  "StoicQuoteEventsRuleSchedule1",
+                  "Arn"
+                ]
+              }
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "dev-stoic-service",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
+              },
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceStoicquote": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "stoic_quote",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceSubscribe": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "subscribe",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceSubscribeEmailVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceSubscribe"
+              },
+              "PathPart": "{email}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceUnsubscribe": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "unsubscribe",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceUnsubscribeEmailVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceUnsubscribe"
+              },
+              "PathPart": "{email}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodStoicquoteOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceStoicquote"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodSubscribeEmailVarOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceSubscribeEmailVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodUnsubscribeEmailVarOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceUnsubscribeEmailVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodStoicquoteGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "GET",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceStoicquote"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "StoicQuoteAPILambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "StoicQuoteAPILambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodSubscribeEmailVarPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceSubscribeEmailVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SubscribeAPILambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SubscribeAPILambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodUnsubscribeEmailVarPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceUnsubscribeEmailVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "UnsubscribeAPILambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "UnsubscribeAPILambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1656891588329": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "dev"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodStoicquoteOptions",
+              "ApiGatewayMethodSubscribeEmailVarOptions",
+              "ApiGatewayMethodUnsubscribeEmailVarOptions",
+              "ApiGatewayMethodStoicquoteGet",
+              "ApiGatewayMethodSubscribeEmailVarPost",
+              "ApiGatewayMethodUnsubscribeEmailVarPost"
+            ]
+          },
+          "StoicQuoteAPILambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "StoicQuoteAPILambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "SubscribeAPILambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "SubscribeAPILambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "UnsubscribeAPILambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "UnsubscribeAPILambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "ProcessEmailEventSourceMappingSQSPostingQueue": {
+            "Type": "AWS::Lambda::EventSourceMapping",
+            "DependsOn": [
+              "myCustRole0"
+            ],
+            "Properties": {
+              "BatchSize": 1,
+              "EventSourceArn": {
+                "Fn::GetAtt": [
+                  "PostingQueue",
+                  "Arn"
+                ]
+              },
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "ProcessEmailLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Enabled": true
+            }
+          },
+          "PostingQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+              "QueueName": "PostingQueue"
+            }
+          },
+          "QuotesBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "vvhvhvh-stoic-service-dev"
+            }
+          },
+          "EmailAddressTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "emailAddresses",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "email",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "email",
+                  "KeyType": "HASH"
+                }
+              ],
+              "BillingMode": "PAY_PER_REQUEST"
+            }
+          },
+          "myCustRole0": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "Path": "/",
+              "RoleName": "MyCustRole0",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": "myPolicyName",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "lambda:CreateEventSourceMapping",
+                          "lambda:ListEventSourceMappings",
+                          "lambda:ListFunctions"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:lambda",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "function:stoic-service-dev-ProcessEmail"
+                              ]
+                            ]
+                          },
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:lambda",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "function:stoic-service-dev-StoicQuote"
+                              ]
+                            ]
+                          },
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:lambda",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "function:stoic-service-dev-StoicQuoteAPI"
+                              ]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "sqs:DeleteMessage",
+                          "sqs:SendMessage",
+                          "sqs:ReceiveMessage",
+                          "sqs:GetQueueAttributes"
+                        ],
+                        "Resource": {
+                          "Fn::GetAtt": [
+                            "PostingQueue",
+                            "Arn"
+                          ]
+                        }
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ssm:GetParameters",
+                          "ssm:GetParameter",
+                          "ssm:DescribeParameters",
+                          "kms:Encrypt",
+                          "kms:Decrypt"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:ssm",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "parameter/StoicService/senderEmail"
+                              ]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:DeleteObject"
+                        ],
+                        "Resource": {
+                          "Fn::Join": [
+                            "",
+                            [
+                              "arn:aws:s3:::",
+                              {
+                                "Ref": "QuotesBucket"
+                              },
+                              "/*"
+                            ]
+                          ]
+                        }
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ses:sendEmail"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:ses",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "*"
+                              ]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "dynamodb:Query",
+                          "dynamodb:Scan",
+                          "dynamodb:GetItem",
+                          "dynamodb:PutItem",
+                          "dynamodb:UpdateItem",
+                          "dynamodb:DeleteItem"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:dynamodb",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "table/emailAddresses"
+                              ]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              ":",
+                              [
+                                "arn:aws:logs",
+                                {
+                                  "Ref": "AWS::Region"
+                                },
+                                {
+                                  "Ref": "AWS::AccountId"
+                                },
+                                "log-group:/aws/lambda/*:*:*"
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "StoicQuoteLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "StoicQuoteLambdaVersionQNanrx7fkrM8zDM7ycb9z0XoMRUzXYiGp9f4jZJA"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-StoicQuoteLambdaFunctionQualifiedArn"
+            }
+          },
+          "ProcessEmailLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ProcessEmailLambdaVersionQ2Ih1NuHn1fQ346LssWdelnjrpVyYz4KOAwEk5dqLYQ"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-ProcessEmailLambdaFunctionQualifiedArn"
+            }
+          },
+          "StoicQuoteAPILambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "StoicQuoteAPILambdaVersionTTCyqVzarRalJMy5VuYjCSmT4T8EZTKsfdXqC2ffx7o"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-StoicQuoteAPILambdaFunctionQualifiedArn"
+            }
+          },
+          "SubscribeAPILambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SubscribeAPILambdaVersionSHWomubiTCQdFWptT4OOE5ByKxMMmGaOWTb4pSBrk"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-SubscribeAPILambdaFunctionQualifiedArn"
+            }
+          },
+          "UnsubscribeAPILambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "UnsubscribeAPILambdaVersionl8ZLkZm9E4GMEcSZQFURTv55xmsCIruye9O8QHBKWyE"
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-UnsubscribeAPILambdaFunctionQualifiedArn"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/dev"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-stoic-service-dev-ServiceEndpoint"
+            }
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "custom": {
+      "myBucketName": "vvhvhvh-stoic-service-dev",
+      "s3Sync": [
+        {
+          "bucketName": "vvhvhvh-stoic-service-dev",
+          "bucketPrefix": "quotes/",
+          "localDir": "quotes"
+        }
+      ]
+    },
+    "plugins": [
+      "serverless-python-requirements",
+      "serverless-s3-sync"
+    ],
+    "pluginsData": {},
+    "functions": {
+      "StoicQuote": {
+        "handler": "src/controllers/quote_controller.stoic_quote",
+        "role": "myCustRole0",
+        "events": [
+          {
+            "schedule": {
+              "rate": [
+                "cron(0 12 * * ? *)"
+              ],
+              "enabled": true,
+              "input": {
+                "key": "min5"
+              }
+            }
+          }
+        ],
+        "name": "stoic-service-dev-StoicQuote",
+        "package": {},
+        "memory": 256,
+        "timeout": 30,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "StoicQuoteLambdaVersionQNanrx7fkrM8zDM7ycb9z0XoMRUzXYiGp9f4jZJA"
+      },
+      "ProcessEmail": {
+        "handler": "src/controllers/quote_controller.process_email",
+        "role": "myCustRole0",
+        "events": [
+          {
+            "sqs": {
+              "batchSize": 1,
+              "arn": {
+                "Fn::GetAtt": [
+                  "PostingQueue",
+                  "Arn"
+                ]
+              }
+            }
+          }
+        ],
+        "name": "stoic-service-dev-ProcessEmail",
+        "package": {},
+        "memory": 256,
+        "timeout": 30,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "ProcessEmailLambdaVersionQ2Ih1NuHn1fQ346LssWdelnjrpVyYz4KOAwEk5dqLYQ"
+      },
+      "StoicQuoteAPI": {
+        "handler": "src/controllers/quote_controller.stoic_quote",
+        "role": "myCustRole0",
+        "events": [
+          {
+            "http": {
+              "path": "stoic_quote",
+              "method": "get",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "GET"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "name": "stoic-service-dev-StoicQuoteAPI",
+        "package": {},
+        "memory": 256,
+        "timeout": 30,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "StoicQuoteAPILambdaVersionTTCyqVzarRalJMy5VuYjCSmT4T8EZTKsfdXqC2ffx7o"
+      },
+      "SubscribeAPI": {
+        "handler": "src/controllers/subscription_controller.subscribe",
+        "role": "myCustRole0",
+        "events": [
+          {
+            "http": {
+              "path": "subscribe/{email}",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "name": "stoic-service-dev-SubscribeAPI",
+        "package": {},
+        "memory": 256,
+        "timeout": 30,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "SubscribeAPILambdaVersionSHWomubiTCQdFWptT4OOE5ByKxMMmGaOWTb4pSBrk"
+      },
+      "UnsubscribeAPI": {
+        "handler": "src/controllers/subscription_controller.unsubscribe",
+        "role": "myCustRole0",
+        "events": [
+          {
+            "http": {
+              "path": "unsubscribe/{email}",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "name": "stoic-service-dev-UnsubscribeAPI",
+        "package": {},
+        "memory": 256,
+        "timeout": 30,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "UnsubscribeAPILambdaVersionl8ZLkZm9E4GMEcSZQFURTv55xmsCIruye9O8QHBKWyE"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "PostingQueue": {
+          "Type": "AWS::SQS::Queue",
+          "Properties": {
+            "QueueName": "PostingQueue"
+          }
+        },
+        "QuotesBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "vvhvhvh-stoic-service-dev"
+          }
+        },
+        "EmailAddressTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "emailAddresses",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "email",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "email",
+                "KeyType": "HASH"
+              }
+            ],
+            "BillingMode": "PAY_PER_REQUEST"
+          }
+        },
+        "myCustRole0": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "Path": "/",
+            "RoleName": "MyCustRole0",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": "myPolicyName",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "lambda:CreateEventSourceMapping",
+                        "lambda:ListEventSourceMappings",
+                        "lambda:ListFunctions"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:lambda",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "function:stoic-service-dev-ProcessEmail"
+                            ]
+                          ]
+                        },
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:lambda",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "function:stoic-service-dev-StoicQuote"
+                            ]
+                          ]
+                        },
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:lambda",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "function:stoic-service-dev-StoicQuoteAPI"
+                            ]
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sqs:DeleteMessage",
+                        "sqs:SendMessage",
+                        "sqs:ReceiveMessage",
+                        "sqs:GetQueueAttributes"
+                      ],
+                      "Resource": {
+                        "Fn::GetAtt": [
+                          "PostingQueue",
+                          "Arn"
+                        ]
+                      }
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "ssm:GetParameters",
+                        "ssm:GetParameter",
+                        "ssm:DescribeParameters",
+                        "kms:Encrypt",
+                        "kms:Decrypt"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:ssm",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "parameter/StoicService/senderEmail"
+                            ]
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:GetObject",
+                        "s3:PutObject",
+                        "s3:DeleteObject"
+                      ],
+                      "Resource": {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:aws:s3:::",
+                            {
+                              "Ref": "QuotesBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      }
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "ses:sendEmail"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:ses",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "*"
+                            ]
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:Query",
+                        "dynamodb:Scan",
+                        "dynamodb:GetItem",
+                        "dynamodb:PutItem",
+                        "dynamodb:UpdateItem",
+                        "dynamodb:DeleteItem"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:dynamodb",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "table/emailAddresses"
+                            ]
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn:aws:logs",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "log-group:/aws/lambda/*:*:*"
+                            ]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless.yml",
+    "initialServerlessConfig": {
+      "service": "stoic-service",
+      "plugins": {
+        "$ref": "$[\"service\"][\"plugins\"]"
+      },
+      "custom": {
+        "$ref": "$[\"service\"][\"custom\"]"
+      },
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      }
+    },
+    "layers": {},
+    "isDashboardMonitoringPreconfigured": false,
+    "artifact": "/home/razorfangius/Projects/serverless/stoic-service/.serverless/stoic-service.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/stoic-service/dev/1656891617668-2022-07-03T23:40:17.668Z",
+    "artifact": "stoic-service.zip"
+  }
+}

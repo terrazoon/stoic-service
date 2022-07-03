@@ -28,10 +28,10 @@ def stoic_quote(event, context):
     :param context:
     :return:
     """
-    print("stoic quote called")
+    #print("stoic quote called")
     response = email_table.scan()
     data = response['Items']
-    print(f"data is {data}")
+    #print(f"data is {data}")
     _put_email_addresses_in_queue(data)
     while 'LastEvaluatedKey' in response:
         response = email_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
@@ -58,7 +58,7 @@ def process_email(event, context):
     my_email_address = record['body']
 
     quote = QuotesService.get_quote()
-    print(f"processing email {my_email_address} {quote}")
+    #print(f"processing email {my_email_address} {quote}")
     EmailService.send_email(quote, my_email_address)
     response = {
         "statusCode": 200,
@@ -68,9 +68,9 @@ def process_email(event, context):
 
 
 def _put_email_addresses_in_queue(data):
-    print(f"enter _put_email_addresses_queue with {data}")
+    #print(f"enter _put_email_addresses_queue with {data}")
     for item in data:
-        print(f"item is {item}")
+        #print(f"item is {item}")
         email_address = item['email']
-        print(f"putting {email_address} in posting queue")
+        #print(f"putting {email_address} in posting queue")
         my_response = sqs.send_message(QueueUrl=queue_url, MessageBody=email_address)

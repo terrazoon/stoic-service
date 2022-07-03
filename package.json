@@ -9,9 +9,9 @@
   "author": "Kenneth Kehl",
   "license": "ISC",
   "devDependencies": {
-    "serverless-python-requirements": "^5.1.0"
+    "serverless-python-requirements": "^5.4.0"
   },
   "dependencies": {
-    "serverless-s3-sync": "^1.12.0"
+    "serverless-s3-sync": "^2.0.0"
   }
 }
