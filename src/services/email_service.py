@@ -16,7 +16,7 @@ today = x.strftime("%d %B %Y")
 
 class EmailService:
     AWS_REGION = "us-east-1"
-    SUBJECT = "Stoic Quote of the Day for 2022"
+    SUBJECT = "Stoic Quote of the Day"
     BODY_TEXT = ("Amazon SES Test (Python)\r\n"
                  "This email was sent with Amazon SES using the "
                  "AWS SDK for Python (Boto)."
@@ -27,7 +27,7 @@ class EmailService:
     @staticmethod
     def _get_html(quote):
         my_html = \
-            f"<html><head></head><body><h2><i>{quote['Quote']}</i></h2><p><i>{quote['Author']}</i></p></body></html>"
+            f"<html><head></head><body><font color='blue'><h2>{quote['Quote']}</h2><p>{quote['Author']}</font></p></body></html>"
         return my_html
 
     @staticmethod
